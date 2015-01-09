@@ -27,7 +27,6 @@
 #define MPR121_H
 
 #include "MPR121_defs.h"
-#include <Wire.h>
 
 // idea behind this is to create a settings structure that we can use to store 
 // all the setup variables for a particular setup - comes pre-instantiated with 
@@ -203,11 +202,6 @@ class MPR121_t
 		mpr121_error_t getError();
 		void clearError();
 
-		// returns status of the MPR121 INT pin as read via digitalRead() on the
-		// Arduino board - this tells us if there has been a change in touch status
-		// on any active electrode since we last read any data
-		bool touchStatusChanged();		
-		
 		// updates the data from the MPR121 into our internal buffer
 		// updateTouchData() does this only for touch on / off status
 		// updateBaseLineData() does this for background baseline
@@ -274,10 +268,6 @@ class MPR121_t
 		// MPR121
 		bool isRunning();
 		bool isInited();		
-
-		// sets the pin that the MPR121 INT output is connected to on the 
-		// Arduino board - does not have to be a hardware interrupt pin
-		void setInterruptPin(unsigned char pin);
 
 		// set number of electrodes to use to generate virtual "13th"
 		// proximity electrode 

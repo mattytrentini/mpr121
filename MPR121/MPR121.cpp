@@ -30,7 +30,6 @@ extern "C" {
 }
 
 #include "MPR121.h"
-#include <Arduino.h>
 
 #define NOT_INITED_BIT 0
 #define ADDRESS_UNKNOWN_BIT 1
@@ -40,7 +39,7 @@ extern "C" {
 
 MPR121_t::MPR121_t(){
 	Wire.begin();	
-	address = 0x5C;    // default address is 0x5C, for use with Bare Touch Board
+	address = 0x5A;    // default address is 0x5C, for use with Bare Touch Board
 	ECR_backup = 0x00;
 	running = false;
 	error = 1<<NOT_INITED_BIT; // initially, we're not initialised
@@ -399,19 +398,6 @@ unsigned char MPR121_t::getTouchThreshold(unsigned char electrode){
 unsigned char MPR121_t::getReleaseThreshold(unsigned char electrode){
 	if(electrode>12 || !isInited()) return(0xFF); // avoid out of bounds behaviour
 	return(getRegister(E0RTH+(electrode<<1)));
-}
-
-void MPR121_t::setInterruptPin(unsigned char pin){
-	// :: here forces the compiler to use Arduino's pinMode, not MPR121's
-	if(!isInited()) return;
-	::pinMode(pin, INPUT_PULLUP);
-	interruptPin = pin;		
-	
-}
-
-bool MPR121_t::touchStatusChanged(){
-	// :: here forces the compiler to use Arduino's digitalRead, not MPR121's
-	return(!::digitalRead(interruptPin));
 }
 
 void MPR121_t::setProxMode(mpr121_proxmode_t mode){
