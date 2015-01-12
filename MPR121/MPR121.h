@@ -27,6 +27,7 @@
 #define MPR121_H
 
 #include "MPR121_defs.h"
+#include "i2c_operations.h"
 
 // idea behind this is to create a settings structure that we can use to store 
 // all the setup variables for a particular setup - comes pre-instantiated with 
@@ -180,6 +181,7 @@ class MPR121_t
 		unsigned char error;
 		bool running;
 		int interruptPin;
+        struct i2c_operations *i2c;
 		
 		int filteredData[13];
 		int baselineData[13];
@@ -188,7 +190,7 @@ class MPR121_t
 		bool getLastTouchData(unsigned char electrode);			
 		
 	public:
-		MPR121_t();
+		MPR121_t(struct i2c_operations *i2c);
 
 		// -------------------- BASIC FUNCTIONS --------------------
 

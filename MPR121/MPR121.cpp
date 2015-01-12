@@ -37,14 +37,15 @@ extern "C" {
 #define OVERCURRENT_FLAG_BIT 3
 #define OUT_OF_RANGE_BIT 4
 
-MPR121_t::MPR121_t(){
-	Wire.begin();	
-	address = 0x5A;    // default address is 0x5C, for use with Bare Touch Board
-	ECR_backup = 0x00;
-	running = false;
-	error = 1<<NOT_INITED_BIT; // initially, we're not initialised
-	touchData = 0;
-	lastTouchData = 0;	
+MPR121_t::MPR121_t(struct i2c_operations *i2c) :
+    i2c           (i2c)
+	address       (0x5A),    // default address is 0x5C, for use with Bare Touch Board
+	ECR_backup    (0x00),
+	running       (false),
+	error         (1<<NOT_INITED_BIT), // initially, we're not initialised
+	touchData     (0),
+	lastTouchData (0)
+{
 }
 
 void MPR121_t::setRegister(unsigned char reg, unsigned char value){
@@ -63,14 +64,12 @@ void MPR121_t::setRegister(unsigned char reg, unsigned char value){
 								// unless modding ECR or GPIO / LED register
 	}
 	
-    Wire.beginTransmission(address);
-    Wire.write(reg);
-    Wire.write(value);
-    if(Wire.endTransmission()!=0){ 
-    	error |= 1<<ADDRESS_UNKNOWN_BIT; // set address unknown bit
-    } else {
-    	error &= ~(1<<ADDRESS_UNKNOWN_BIT); 
-    }
+    char data[2];
+    data[0] = reg;
+    data[1] = value;
+    i2c->write(address, data, 2)
+    
+    // TODO How to handle error states; original code set 'error' if transmission was unsuccessful.
     
     if(wasRunning) run();		// restore run mode if necessary
 }
@@ -78,16 +77,12 @@ void MPR121_t::setRegister(unsigned char reg, unsigned char value){
 unsigned char MPR121_t::getRegister(unsigned char reg){
 	unsigned char scratch;
 
-    Wire.beginTransmission(address); 
-    Wire.write(reg); // set address to read from our requested register
-    Wire.endTransmission(false); // repeated start
-    Wire.requestFrom(address,(unsigned char)1);  // just a single byte
-    if(Wire.endTransmission()!=0){
-    	error |= 1<<ADDRESS_UNKNOWN_BIT;
-    } else {
-    	error &= ~(1<<ADDRESS_UNKNOWN_BIT);
-    }
-    scratch = Wire.read();
+    i2c->write(address, &reg, 1);
+    
+    i2c->read(address, scratch, 1);  // just a single byte
+
+    // TODO I2C error checking
+    
     // auto update errors for registers with error data
     if(reg == TS2 && ((scratch&0x80)!=0)){
     	error |= 1<<OVERCURRENT_FLAG_BIT;	
@@ -99,6 +94,7 @@ unsigned char MPR121_t::getRegister(unsigned char reg){
     } else {
     	error &= ~(1<<OUT_OF_RANGE_BIT);    
     }
+    
     return scratch;
 }
 
@@ -279,10 +275,7 @@ bool MPR121_t::updateFilteredData(){
 	if(!isInited()) return(false);
 	unsigned char LSB, MSB;
 
-    Wire.beginTransmission(address); 
-    Wire.write(E0FDL); 	// set address register to read from the start of the 
-    					//filtered data
-    Wire.endTransmission(false); // repeated start
+/*     i2c->write(address, E0FDL, 1)
   
     if(Wire.requestFrom(address,(unsigned char)26)==26){
 		for(int i=0; i<13; i++){ // 13 filtered values
@@ -295,7 +288,8 @@ bool MPR121_t::updateFilteredData(){
     	// if we don't get back all 26 values we requested, don't update the FDAT values
     	// and return false
 		return(false);     
-    }
+    } */
+    return false;
 }
 
 int MPR121_t::getFilteredData(unsigned char electrode){
@@ -307,7 +301,7 @@ int MPR121_t::getFilteredData(unsigned char electrode){
 bool MPR121_t::updateBaselineData(){
 	if(!isInited()) return(false);
 
-    Wire.beginTransmission(address); 
+/*     Wire.beginTransmission(address); 
     Wire.write(E0BV); 	// set address register to read from the start of the 
     					// baseline data
     Wire.endTransmission(false); // repeated start
@@ -324,7 +318,9 @@ bool MPR121_t::updateBaselineData(){
 		return(false); 
 		}        
     }
-}
+ */
+    return false;
+ }
 
 int MPR121_t::getBaselineData(unsigned char electrode){
 	if(electrode>12 || !isInited()) return(0xFFFF); // avoid out of bounds behaviour
